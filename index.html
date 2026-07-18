@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>طاقتك النهارده 🌙 — قراءتك اليومية ودعمك النفسي</title>
+<meta name="description" content="قراءة برجك اليومية، تاروت، خريطتك الفلكية، ودعم نفسي بروح مصرية دافية — كل يوم طاقة جديدة." />
+<meta property="og:title" content="طاقتك النهارده 🌙" />
+<meta property="og:description" content="قراءتك اليومية + تاروت + خريطتك الفلكية + مساحة فضفضة بالذكاء الاصطناعي" />
+
+<!-- ✳️ Google Analytics: بدلي G-XXXXXXXXXX بالكود بتاعك (الخطوات في README) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+  // مساعد تسجيل الأحداث — بيتجاهل بهدوء لو الأناليتكس مش متفعل
+  window.track = function(name){ try { gtag('event', name); } catch(e) {} };
+</script>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>html,body{margin:0;padding:0;background:#0E0A1E;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ——— طاقتك النهارده — نموذج حي ———
+// Palette: Cairo-night plum + warm lamp gold + soft rose
+const C = {
+  bg: "#191130",
+  surface: "#241A44",
+  surface2: "#2E2255",
+  gold: "#E8B84B",
+  goldSoft: "#F3D48A",
+  rose: "#E88BA3",
+  text: "#F6F0E4",
+  muted: "#A79CC4",
+  line: "rgba(232,184,75,0.18)",
+};
+
+const SIGNS = [
+  { id: "aries", name: "الحمل", emoji: "♈", dates: "٢١ مارس – ١٩ أبريل" },
+  { id: "taurus", name: "الثور", emoji: "♉", dates: "٢٠ أبريل – ٢٠ مايو" },
+  { id: "gemini", name: "الجوزاء", emoji: "♊", dates: "٢١ مايو – ٢٠ يونيو" },
+  { id: "cancer", name: "السرطان", emoji: "♋", dates: "٢١ يونيو – ٢٢ يوليو" },
+  { id: "leo", name: "الأسد", emoji: "♌", dates: "٢٣ يوليو – ٢٢ أغسطس" },
+  { id: "virgo", name: "العذراء", emoji: "♍", dates: "٢٣ أغسطس – ٢٢ سبتمبر" },
+  { id: "libra", name: "الميزان", emoji: "♎", dates: "٢٣ سبتمبر – ٢٢ أكتوبر" },
+  { id: "scorpio", name: "العقرب", emoji: "♏", dates: "٢٣ أكتوبر – ٢١ نوفمبر" },
+  { id: "sag", name: "القوس", emoji: "♐", dates: "٢٢ نوفمبر – ٢١ ديسمبر" },
+  { id: "cap", name: "الجدي", emoji: "♑", dates: "٢٢ ديسمبر – ١٩ يناير" },
+  { id: "aqua", name: "الدلو", emoji: "♒", dates: "٢٠ يناير – ١٨ فبراير" },
+  { id: "pisces", name: "الحوت", emoji: "♓", dates: "١٩ فبراير – ٢٠ مارس" },
+];
+
+const READINGS = {
+  default: {
+    title: "يوم طاقته ذهبية ✨",
+    text: "النهارده القمر في وضع بيدعم وضوحك الذهني. لو فيه قرار مأجلاه من فترة، ده وقته. متستعجليش على حاجة، بس متأجليش اللي قلبك مرتاحله.",
+    lucky: "لونك النهارده: ذهبي دافي",
+    support: "افتكري: الضغط اللي إنتي فيه مش هيفضل للأبد. إنتي عدّيتي أصعب من كده وطلعتي أقوى. النهارده خدي نَفَس، وامشي خطوة واحدة بس.",
+  },
+};
+
+const MOODS = [
+  { emoji: "🌤", label: "كويسة الحمد لله", reply: "جميل! خلي اليوم ده يعدي وإنتي ماسكة في الطاقة الحلوة دي. شير حاجة لطيفة مع حد بتحبيه 💛" },
+  { emoji: "😮‍💨", label: "مضغوطة", reply: "واخدة بالي منك. الضغط ده حقيقي، بس هو مؤقت. جربي فقاعة الجو الحلو — دقيقتين تنفس هيفرقوا معاكي أكتر ما تتخيلي." },
+  { emoji: "🌧", label: "مش في مودي", reply: "ولا يهمك، مش كل يوم لازم نكون في القمة. اسمحي لنفسك تحسي، ومتحكميش على نفسك النهارده. بكرة طاقة تانية خالص ✨" },
+  { emoji: "🔥", label: "متحمسة", reply: "استغلي الحماس ده! اكتبي دلوقتي أهم حاجة عايزة تخلصيها وابدئي فيها فورًا — الطاقة دي وقود 🔥" },
+];
+
+function Stars() {
+  const stars = Array.from({ length: 26 }, (_, i) => ({
+    top: (i * 37) % 100,
+    right: (i * 53) % 100,
+    size: 1 + (i % 3),
+    delay: (i % 5) * 0.8,
+  }));
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      {stars.map((s, i) => (
+        <div key={i} style={{
+          position: "absolute", top: `${s.top}%`, right: `${s.right}%`,
+          width: s.size, height: s.size, borderRadius: "50%",
+          background: C.goldSoft, opacity: 0.5,
+          animation: `twinkle 3.5s ease-in-out ${s.delay}s infinite`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function Onboarding({ onPick }) {
+  return (
+    <div style={{ padding: "28px 22px", position: "relative", zIndex: 1 }}>
+      <div style={{ textAlign: "center", marginBottom: 22 }}>
+        <div style={{ fontSize: 40, marginBottom: 6 }}>🌙</div>
+        <h1 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 26, margin: 0, color: C.goldSoft }}>
+          طاقتك النهارده
+        </h1>
+        <p style={{ color: C.muted, fontSize: 14, marginTop: 8, lineHeight: 1.8 }}>
+          قراءتك اليومية + جرعة دعم بروح مصرية 💛<br />اختاري برجك الأول
+        </p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        {SIGNS.map((s) => (
+          <button key={s.id} onClick={() => { track('sign_pick'); onPick(s); }} style={{
+            background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16,
+            padding: "12px 6px", color: C.text, cursor: "pointer",
+            fontFamily: "'Tajawal', sans-serif", transition: "transform .15s",
+          }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(.95)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            <div style={{ fontSize: 22, color: C.gold }}>{s.emoji}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{s.name}</div>
+            <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{s.dates}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Today({ sign }) {
+  const r = READINGS.default;
+  const moon = moonPhase();
+  return (
+    <div style={{ padding: "22px 20px 90px", position: "relative", zIndex: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ color: C.muted, fontSize: 12 }}>صباح الفل ☀️</div>
+          <div style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.text }}>
+            {sign.emoji} برج {sign.name}
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: C.muted }}>السبت ١٨ يوليو</div>
+      </div>
+
+      {/* بطاقة الطاقة — العنصر المميز */}
+      <div style={{
+        marginTop: 18, borderRadius: 22, padding: 20, position: "relative", overflow: "hidden",
+        background: `linear-gradient(145deg, ${C.surface2}, ${C.surface})`,
+        border: `1px solid ${C.line}`,
+        boxShadow: "0 8px 30px rgba(0,0,0,.35)",
+      }}>
+        <div style={{
+          position: "absolute", top: -40, left: -40, width: 130, height: 130, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(232,184,75,.25), transparent 70%)",
+        }} />
+        <div style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 18, color: C.goldSoft }}>
+          {r.title}
+        </div>
+        <p style={{ fontSize: 14.5, lineHeight: 2, color: C.text, margin: "10px 0 12px" }}>{r.text}</p>
+        <span style={{
+          fontSize: 12, color: C.gold, background: "rgba(232,184,75,.12)",
+          padding: "5px 12px", borderRadius: 20,
+        }}>{r.lucky}</span>
+      </div>
+
+      {/* حركة القمر — محسوبة فلكيًا */}
+      <div style={{
+        marginTop: 14, borderRadius: 18, padding: "14px 16px",
+        background: C.surface, border: `1px solid ${C.line}`,
+        display: "flex", alignItems: "center", gap: 12,
+      }}>
+        <div style={{ fontSize: 26 }}>{moon.name.split(" ").pop()}</div>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: C.goldSoft }}>{moon.name}</div>
+          <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.7 }}>{moon.vibe}</div>
+        </div>
+      </div>
+
+      {/* جرعة الدعم */}
+      <div style={{
+        marginTop: 14, borderRadius: 22, padding: 18,
+        background: "rgba(232,139,163,.08)", border: "1px solid rgba(232,139,163,.25)",
+      }}>
+        <div style={{ fontSize: 13, color: C.rose, fontWeight: 700, marginBottom: 6 }}>💌 رسالة ليكي إنتي</div>
+        <p style={{ fontSize: 14, lineHeight: 2, color: C.text, margin: 0 }}>{r.support}</p>
+      </div>
+
+      <div style={{
+        marginTop: 14, textAlign: "center", fontSize: 11.5, color: C.muted, lineHeight: 1.8,
+      }}>
+        المحتوى للدعم ورفع المزاج — مش بديل عن الاستشارة النفسية المتخصصة 🤍
+      </div>
+    </div>
+  );
+}
+
+function Mood() {
+  const [picked, setPicked] = useState(null);
+  return (
+    <div style={{ padding: "26px 20px 90px", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        حاسة بإيه النهارده؟
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>اختاري اللي أقرب لقلبك، من غير تفكير كتير</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
+        {MOODS.map((m, i) => (
+          <button key={i} onClick={() => { track('mood_checkin'); setPicked(m); }} style={{
+            background: picked === m ? "rgba(232,184,75,.15)" : C.surface,
+            border: `1.5px solid ${picked === m ? C.gold : C.line}`,
+            borderRadius: 18, padding: "18px 10px", cursor: "pointer",
+            color: C.text, fontFamily: "'Tajawal', sans-serif",
+          }}>
+            <div style={{ fontSize: 28 }}>{m.emoji}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 6 }}>{m.label}</div>
+          </button>
+        ))}
+      </div>
+      {picked && (
+        <div style={{
+          marginTop: 16, borderRadius: 18, padding: 16, background: C.surface2,
+          border: `1px solid ${C.line}`, animation: "fadeUp .4s ease",
+        }}>
+          <p style={{ fontSize: 14, lineHeight: 2, margin: 0, color: C.text }}>{picked.reply}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Bubble() {
+  const [running, setRunning] = useState(false);
+  const [phase, setPhase] = useState("خدي نَفَس عميق…");
+  useEffect(() => {
+    if (!running) return;
+    const phases = ["شهيق… ٤ ثواني 🌬", "امسكي… ٤ ثواني ✨", "زفير… بالراحة ٦ ثواني 🌙"];
+    let i = 0;
+    setPhase(phases[0]);
+    const t = setInterval(() => { i = (i + 1) % 3; setPhase(phases[i]); }, 4700);
+    return () => clearInterval(t);
+  }, [running]);
+  return (
+    <div style={{ padding: "26px 20px 90px", textAlign: "center", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        فقاعة الجو الحلو 🫧
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>دقيقتين ليكي لوحدك — اقفلي على العالم</p>
+      <div style={{ height: 230, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 10 }}>
+        <div style={{
+          width: 150, height: 150, borderRadius: "50%",
+          background: "radial-gradient(circle at 35% 30%, rgba(243,212,138,.8), rgba(232,139,163,.35), rgba(46,34,85,.9))",
+          boxShadow: "0 0 60px rgba(232,184,75,.35)",
+          animation: running ? "breathe 14s ease-in-out infinite" : "none",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 13, color: C.bg, fontWeight: 700, padding: 18,
+        }}>
+          {running ? phase : "جاهزة؟"}
+        </div>
+      </div>
+      <button onClick={() => { if(!running) track('breathing_start'); setRunning(!running); }} style={{
+        background: running ? "transparent" : `linear-gradient(90deg, ${C.gold}, ${C.goldSoft})`,
+        color: running ? C.gold : C.bg, border: `1.5px solid ${C.gold}`,
+        borderRadius: 30, padding: "12px 36px", fontSize: 15, fontWeight: 700,
+        cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+      }}>
+        {running ? "كفاية كده 🤍" : "ابدئي التنفس"}
+      </button>
+    </div>
+  );
+}
+
+function Evening() {
+  const [g, setG] = useState("");
+  const [saved, setSaved] = useState(false);
+  return (
+    <div style={{ padding: "26px 20px 90px", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        جرعة المسا 🌙
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6, lineHeight: 1.9 }}>
+        قبل ما تنامي، اكتبي حاجة واحدة حلوة حصلت النهارده — مهما كانت صغيرة
+      </p>
+      <textarea value={g} onChange={(e) => { setG(e.target.value); setSaved(false); }}
+        placeholder="النهارده أنا ممتنة لـ…"
+        style={{
+          width: "100%", boxSizing: "border-box", minHeight: 110, marginTop: 14,
+          background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16,
+          padding: 14, color: C.text, fontSize: 14, fontFamily: "'Tajawal', sans-serif",
+          resize: "none", outline: "none", lineHeight: 1.9,
+        }} />
+      <button onClick={() => { if(g.trim()) { track('gratitude_save'); setSaved(true); } }} style={{
+        marginTop: 12, width: "100%", background: `linear-gradient(90deg, ${C.gold}, ${C.goldSoft})`,
+        border: "none", borderRadius: 30, padding: "13px", fontSize: 15, fontWeight: 700,
+        color: C.bg, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+      }}>احفظي الامتنان</button>
+      {saved && (
+        <p style={{ textAlign: "center", color: C.rose, fontSize: 14, marginTop: 12, animation: "fadeUp .4s ease" }}>
+          اتحفظت 💛 تصبحي على خير وطاقة حلوة
+        </p>
+      )}
+    </div>
+  );
+}
+
+const DEMO_REPLIES = [
+  "سامعاكي 🤍 احكيلي أكتر — إيه أكتر حاجة ضاغطة عليكي دلوقتي؟",
+  "اللي بتحسيه ده مفهوم جدًا، وطبيعي تتضايقي. لو قسمنا الموضوع لحتت صغيرة، إيه أول حتة ممكن نبدأ بيها؟",
+  "خدي نَفَس عميق الأول. إنتي واخدة على كتفك كتير، ومش لازم تحلي كل حاجة النهارده. إيه اللي لو اتحل هيريحك أكتر حاجة؟",
+  "شكرًا إنك شاركتيني ده. مشاعرك مشروعة ومسموعة هنا. حابة نكمل كلام ولا تجربي تمرين التنفس في فقاعتك وترجعيلي؟",
+];
+
+function Chat() {
+  const [msgs, setMsgs] = useState([
+    { role: "assistant", content: "أهلًا بيكي في مساحتك 🤍 هنا تقدري تقولي اللي جواكي براحتك، من غير حكم على حاجة. حاسة بإيه دلوقتي؟" },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [demoNoted, setDemoNoted] = useState(false);
+
+  const demoReply = () => {
+    const idx = Math.min(Math.floor(msgs.filter((m) => m.role === "user").length / 1) % DEMO_REPLIES.length, DEMO_REPLIES.length - 1);
+    let reply = DEMO_REPLIES[idx];
+    if (!demoNoted) {
+      reply += "\n\n(رد تجريبي — في التطبيق الحقيقي الرد بييجي من الذكاء الاصطناعي مباشرة)";
+      setDemoNoted(true);
+    }
+    return reply;
+  };
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    track('chat_message');
+    const newMsgs = [...msgs, { role: "user", content: text }];
+    setMsgs(newMsgs);
+    setInput("");
+    setLoading(true);
+    try {
+      const sanitize = (s) => s.replace(/[\u{10000}-\u{10FFFF}]/gu, "").replace(/[\uD800-\uDFFF]/g, "");
+      const apiMsgs = newMsgs.filter((m, i) => !(i === 0 && m.role === "assistant"));
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system:
+            "إنتي مساحة دعم اسمها 'طاقتك النهارده' بتتكلمي بالعامية المصرية بدفء وحنية. دورك: تسمعي، تحتوي المشاعر، وتساعدي الشخص يفضفض ويرتب أفكاره. ردودك قصيرة ودافية (2-4 جمل)، من غير محاضرات ومن غير أحكام. متدّيش تشخيصات نفسية ولا نصايح طبية. لو ظهرت علامات أزمة نفسية حادة أو أفكار إيذاء النفس، اطلبي منهم بحنية يتواصلوا فورًا مع متخصص أو خط مساندة نفسية في بلدهم، ووضحي إنك مساحة دعم مش بديل عن العلاج.",
+          messages: apiMsgs.map((m) => ({ role: m.role, content: sanitize(m.content) })),
+        }),
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+      const reply = data.content?.map((i) => (i.type === "text" ? i.text : "")).join("");
+      if (reply) {
+        setMsgs((p) => [...p, { role: "assistant", content: reply }]);
+      } else {
+        setMsgs((p) => [...p, { role: "assistant", content: demoReply() }]);
+      }
+    } catch (e) {
+      setMsgs((p) => [...p, { role: "assistant", content: demoReply() }]);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
+      <div style={{ padding: "18px 20px 8px" }}>
+        <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 19, color: C.goldSoft, margin: 0 }}>
+          مساحتك 💬
+        </h2>
+        <p style={{ color: C.muted, fontSize: 11.5, margin: "4px 0 0", lineHeight: 1.7 }}>
+          فضفضي براحتك — كلامك مش بيتحكم عليه هنا. للدعم مش للعلاج النفسي.
+        </p>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 16px 150px" }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{
+            maxWidth: "82%", marginBottom: 10, padding: "10px 14px", fontSize: 14, lineHeight: 1.9,
+            borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+            background: m.role === "user" ? "linear-gradient(135deg, rgba(232,184,75,.25), rgba(232,184,75,.12))" : C.surface2,
+            border: `1px solid ${m.role === "user" ? "rgba(232,184,75,.3)" : C.line}`,
+            color: C.text, marginRight: m.role === "user" ? "auto" : 0, marginLeft: m.role === "user" ? 0 : "auto",
+            animation: "fadeUp .3s ease",
+          }}>{m.content}</div>
+        ))}
+        {loading && (
+          <div style={{ color: C.muted, fontSize: 13, padding: "4px 8px" }}>بتكتب… ✨</div>
+        )}
+      </div>
+      <div style={{
+        position: "absolute", bottom: 78, left: 0, right: 0, padding: "10px 14px",
+        background: "rgba(25,17,48,.95)", backdropFilter: "blur(8px)", display: "flex", gap: 8,
+      }}>
+        <input value={input} onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+          placeholder="اكتبي اللي جواكي…"
+          style={{
+            flex: 1, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 24,
+            padding: "12px 16px", color: C.text, fontSize: 14, outline: "none",
+            fontFamily: "'Tajawal', sans-serif",
+          }} />
+        <button onClick={send} disabled={loading} style={{
+          background: `linear-gradient(90deg, ${C.gold}, ${C.goldSoft})`, border: "none",
+          borderRadius: "50%", width: 44, height: 44, fontSize: 18, cursor: "pointer", color: C.bg,
+        }}>↑</button>
+      </div>
+    </div>
+  );
+}
+
+// حساب البرج من تاريخ الميلاد
+function signFromDate(dateStr) {
+  const d = new Date(dateStr);
+  const m = d.getMonth() + 1, day = d.getDate();
+  const ranges = [
+    [1, 20, "cap"], [2, 19, "aqua"], [3, 21, "pisces"], [4, 20, "aries"],
+    [5, 21, "taurus"], [6, 21, "gemini"], [7, 23, "cancer"], [8, 23, "leo"],
+    [9, 23, "virgo"], [10, 23, "libra"], [11, 22, "scorpio"], [12, 22, "sag"], [13, 32, "cap"],
+  ];
+  for (let i = 0; i < ranges.length - 1; i++) {
+    if ((m === ranges[i][0] && day >= ranges[i][1]) || (m === ranges[i + 1][0] && day < ranges[i + 1][1]))
+      return SIGNS.find((s) => s.id === ranges[i][2]);
+  }
+  return SIGNS.find((s) => s.id === "cap");
+}
+
+// حساب طور القمر الحقيقي (معادلة فلكية)
+function moonPhase() {
+  const synodic = 29.53058867;
+  const ref = new Date(Date.UTC(2000, 0, 6, 18, 14)).getTime();
+  const days = (Date.now() - ref) / 86400000;
+  const age = ((days % synodic) + synodic) % synodic;
+  if (age < 1.85) return { name: "قمر جديد 🌑", vibe: "بداية دورة — وقت مثالي للنوايا والبدايات الجديدة" };
+  if (age < 7.38) return { name: "هلال متزايد 🌒", vibe: "طاقة نمو — ابني على اللي بدأتيه بهدوء" };
+  if (age < 9.22) return { name: "تربيع أول 🌓", vibe: "وقت قرارات — متترددّيش كتير" };
+  if (age < 14.77) return { name: "أحدب متزايد 🌔", vibe: "الطاقة عالية — راجعي وظبطي التفاصيل" };
+  if (age < 16.61) return { name: "بدر مكتمل 🌕", vibe: "مشاعر قوية ومكشوفة — خدي بالك من الانفعال واحتفلي بالإنجازات" };
+  if (age < 22.15) return { name: "أحدب متناقص 🌖", vibe: "وقت امتنان ومشاركة اللي اتعلمتيه" };
+  if (age < 23.99) return { name: "تربيع أخير 🌗", vibe: "سيبي اللي مبقاش ليكي — تخففي من حمل زيادة" };
+  return { name: "هلال متناقص 🌘", vibe: "راحة وتأمل — حضّري نفسك لدورة جديدة" };
+}
+
+const ELEMENT = {
+  aries: "fire", leo: "fire", sag: "fire",
+  taurus: "earth", virgo: "earth", cap: "earth",
+  gemini: "air", libra: "air", aqua: "air",
+  cancer: "water", scorpio: "water", pisces: "water",
+};
+
+const FAMILY_TIPS = {
+  partner: {
+    fire: "شريكك ناري 🔥 النهارده طاقته عالية وممكن يتسرع في رد فعله. متدخليش في نقاش حامي — امدحي مجهوده الأول وبعدين قولي وجهة نظرك، هتلاقيه لين خالص.",
+    earth: "شريكك ترابي 🌿 محتاج يحس بالاستقرار النهارده. الكلام العملي الهادي هيوصله أحسن من المشاعر الكبيرة. اقترحي خطة واضحة لأي موضوع معلق بينكم.",
+    air: "شريكك هوائي 💨 عايز كلام ونقاش النهارده. اسأليه عن رأيه في حاجة بيهتم بيها وسيبيه يتكلم — التواصل الذهني هو لغة الحب بتاعته.",
+    water: "شريكك مائي 💧 حساس زيادة النهارده مع حركة القمر. كلمة دافية أو لمسة اهتمام صغيرة هتعمل معاه مفعول السحر. متاخديش صمته على إنه زعل.",
+  },
+  child: {
+    fire: "طفلك ناري 🔥 طاقته ولعانة النهارده — محتاج يطلعها في حركة ولعب. لو اتعند، متدخليش معاه في عناد، حوّلي طلبك للعبة أو تحدي وهيسمع الكلام.",
+    earth: "طفلك ترابي 🌿 محتاج روتين وهدوء النهارده. التغييرات المفاجئة هتضايقه — قوليله على أي خطة قبلها بوقت، وكافئي التزامه بحاجة ملموسة.",
+    air: "طفلك هوائي 💨 فضوله عالي النهارده وأسئلته مش هتخلص 😄 اصبري عليه وجاوبيه — ودي فرصة حلوة تعلميه حاجة جديدة وهو مبسوط.",
+    water: "طفلك مائي 💧 مشاعره على سطح جلده النهارده. لو عيّط أو اتضايق بسرعة، احضنيه الأول قبل ما تناقشيه — الأمان عنده بييجي قبل المنطق.",
+  },
+};
+
+// الجدول الصيني التقليدي (عمر قمري 18-45 × شهر قمري 1-12) — للتسلية
+const CHINESE_CHART = {
+  18: "GBGBBBBBBBBB", 19: "BGBGGBBGBBGG", 20: "GBGBBBBBBGBB", 21: "BGGGGGGGGGGG",
+  22: "GBBGBGGBGGGG", 23: "BBGBBGBGBBBG", 24: "BGBBGBBGGGGG", 25: "GBBGGBGBBBBB",
+  26: "BGBGGBGBGGGG", 27: "GBGBGGBBBBGB", 28: "BGBGGGBBBBGG", 29: "GBGGBBGGGBBB",
+  30: "BGGGGGGGGGBB", 31: "BBGBGGGBGGGB", 32: "BGGBGBBGBBGB", 33: "GBBGGBGBGBBG",
+  34: "BGBGGBBGBBGB", 35: "BBGBGBGBGBGB", 36: "BGBBBGBBGGGG", 37: "GGBGGGBGGBBB",
+  38: "BBGGBGGBGGBG", 39: "GGBGGGBGBBGB", 40: "BBBGBGBGBGGB", 41: "GGBGBBGGBGBG",
+  42: "BGGBBBBBGBGB", 43: "GBGGBBBGGGBB", 44: "BGGGBGBBGBGB", 45: "GBGBGGBGBGBG",
+};
+
+const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+function Pregnancy() {
+  const [open, setOpen] = useState(false);
+  const [momBdate, setMomBdate] = useState("");
+  const [concMonth, setConcMonth] = useState("");
+  const [result, setResult] = useState(null);
+
+  const calc = () => {
+    if (!momBdate || concMonth === "") return;
+    const bd = new Date(momBdate);
+    const now = new Date();
+    let age = now.getFullYear() - bd.getFullYear();
+    const beforeBday = now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate());
+    if (beforeBday) age -= 1;
+    const lunarAge = Math.min(45, Math.max(18, age + 1)); // العمر القمري تقريبًا = العمر + سنة
+    const ch = CHINESE_CHART[lunarAge][parseInt(concMonth)];
+    setResult(ch === "B"
+      ? { emoji: "💙", label: "ولد", text: "الجدول الصيني بيقول: أمير صغير في الطريق!" }
+      : { emoji: "💗", label: "بنت", text: "الجدول الصيني بيقول: أميرة صغيرة في الطريق!" });
+  };
+
+  return (
+    <div style={{
+      marginTop: 14, borderRadius: 18, overflow: "hidden",
+      background: "rgba(232,139,163,.07)", border: "1px solid rgba(232,139,163,.28)",
+    }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", background: "none", border: "none", padding: "15px 16px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: C.rose }}>منتظرة بيبي؟ 🤰</span>
+        <span style={{ color: C.rose, fontSize: 14 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 16px", animation: "fadeUp .3s ease" }}>
+          <p style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.9, margin: "0 0 12px" }}>
+            الجدول الصيني التقليدي بيتوقع جنس البيبي من عمر الماما وشهر الحمل — لعبة تراثية حلوة للتسلية، مش تشخيص طبي 😉 السونار هو الكلمة الأخيرة!
+          </p>
+          <label style={{ fontSize: 12, color: C.muted }}>تاريخ ميلادك</label>
+          <input type="date" value={momBdate} onChange={(e) => { setMomBdate(e.target.value); setResult(null); }}
+            style={{
+              width: "100%", boxSizing: "border-box", marginTop: 6, background: C.surface2,
+              border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 14px",
+              color: C.text, fontSize: 14, outline: "none", colorScheme: "dark",
+              fontFamily: "'Tajawal', sans-serif",
+            }} />
+          <label style={{ fontSize: 12, color: C.muted, display: "block", marginTop: 10 }}>شهر بداية الحمل</label>
+          <select value={concMonth} onChange={(e) => { setConcMonth(e.target.value); setResult(null); }}
+            style={{
+              width: "100%", boxSizing: "border-box", marginTop: 6, background: C.surface2,
+              border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 14px",
+              color: C.text, fontSize: 14, outline: "none",
+              fontFamily: "'Tajawal', sans-serif",
+            }}>
+            <option value="">اختاري الشهر…</option>
+            {AR_MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+          </select>
+          <button onClick={calc} style={{
+            marginTop: 12, width: "100%", background: "linear-gradient(90deg, #E88BA3, #F3B8C8)",
+            border: "none", borderRadius: 24, padding: "12px", fontSize: 14, fontWeight: 700,
+            color: C.bg, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+          }}>اكشفي التوقع ✨</button>
+          {result && (
+            <div style={{
+              marginTop: 14, textAlign: "center", padding: "16px", borderRadius: 16,
+              background: C.surface2, border: `1px solid ${C.line}`, animation: "fadeUp .4s ease",
+            }}>
+              <div style={{ fontSize: 38 }}>{result.emoji}</div>
+              <div style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, marginTop: 4 }}>
+                {result.label}
+              </div>
+              <p style={{ fontSize: 13, color: C.text, margin: "8px 0 0", lineHeight: 1.8 }}>{result.text}</p>
+              <p style={{ fontSize: 11, color: C.muted, margin: "8px 0 0" }}>للتسلية فقط — دقة الجدول التقليدي حوالي ٥٠٪ 😄</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Family() {
+  const [members, setMembers] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [relation, setRelation] = useState("partner");
+  const [bdate, setBdate] = useState("");
+  const moon = moonPhase();
+
+  const add = () => {
+    if (!name.trim() || !bdate) return;
+    const sign = signFromDate(bdate);
+    setMembers([...members, { name: name.trim(), relation, sign }]);
+    setName(""); setBdate(""); setAdding(false);
+  };
+
+  return (
+    <div style={{ padding: "22px 20px 90px", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        عيلتك 👨‍👩‍👧
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6, lineHeight: 1.8 }}>
+        ضيفي شريكك وأولادك، وكل يوم هتلاقي هنا إزاي تتعاملي مع كل واحد فيهم حسب برجه وحركة القمر
+      </p>
+
+      <div style={{
+        marginTop: 12, borderRadius: 16, padding: "12px 14px",
+        background: "rgba(232,184,75,.08)", border: `1px solid ${C.line}`,
+        fontSize: 12.5, color: C.goldSoft, lineHeight: 1.8,
+      }}>
+        {moon.name} — {moon.vibe}
+      </div>
+
+      <Pregnancy />
+
+      {members.map((m, i) => (
+        <div key={i} style={{
+          marginTop: 12, borderRadius: 18, padding: 16, background: C.surface2,
+          border: `1px solid ${C.line}`, animation: "fadeUp .3s ease",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 22, color: C.gold }}>{m.sign.emoji}</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{m.name}</div>
+              <div style={{ fontSize: 11.5, color: C.muted }}>
+                {m.relation === "partner" ? "شريك حياتك" : "طفلك"} · برج {m.sign.name}
+              </div>
+            </div>
+          </div>
+          <p style={{ fontSize: 13.5, lineHeight: 2, color: C.text, margin: "10px 0 0" }}>
+            {FAMILY_TIPS[m.relation][ELEMENT[m.sign.id]]}
+          </p>
+        </div>
+      ))}
+
+      {adding ? (
+        <div style={{
+          marginTop: 14, borderRadius: 18, padding: 16, background: C.surface,
+          border: `1px solid ${C.line}`,
+        }}>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم"
+            style={{
+              width: "100%", boxSizing: "border-box", background: C.surface2,
+              border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 14px",
+              color: C.text, fontSize: 14, outline: "none", fontFamily: "'Tajawal', sans-serif",
+            }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            {[["partner", "شريك حياتي 💛"], ["child", "طفلي 🧸"]].map(([v, l]) => (
+              <button key={v} onClick={() => setRelation(v)} style={{
+                flex: 1, background: relation === v ? "rgba(232,184,75,.15)" : C.surface2,
+                border: `1.5px solid ${relation === v ? C.gold : C.line}`, borderRadius: 12,
+                padding: "10px", color: C.text, fontSize: 13, cursor: "pointer",
+                fontFamily: "'Tajawal', sans-serif",
+              }}>{l}</button>
+            ))}
+          </div>
+          <input type="date" value={bdate} onChange={(e) => setBdate(e.target.value)}
+            style={{
+              width: "100%", boxSizing: "border-box", marginTop: 10, background: C.surface2,
+              border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 14px",
+              color: C.text, fontSize: 14, outline: "none", colorScheme: "dark",
+              fontFamily: "'Tajawal', sans-serif",
+            }} />
+          <button onClick={add} style={{
+            marginTop: 12, width: "100%", background: `linear-gradient(90deg, ${C.gold}, ${C.goldSoft})`,
+            border: "none", borderRadius: 24, padding: "12px", fontSize: 14, fontWeight: 700,
+            color: C.bg, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+          }}>ضيفي للعيلة</button>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)} style={{
+          marginTop: 14, width: "100%", background: "transparent",
+          border: `1.5px dashed ${C.gold}`, borderRadius: 18, padding: "14px",
+          fontSize: 14, fontWeight: 700, color: C.gold, cursor: "pointer",
+          fontFamily: "'Tajawal', sans-serif",
+        }}>+ ضيفي فرد من العيلة</button>
+      )}
+    </div>
+  );
+}
+
+// ——— حسابات فلكية مبسطة (خوارزمية Schlyter منخفضة الدقة ~1-2 درجة) ———
+const RAD = Math.PI / 180;
+const norm360 = (x) => ((x % 360) + 360) % 360;
+
+function daysSinceJ2000(date) {
+  return (date.getTime() - Date.UTC(1999, 11, 31, 0, 0)) / 86400000;
+}
+
+function solveKepler(M, e) {
+  let E = M + (e / RAD) * Math.sin(M * RAD) * (1 + e * Math.cos(M * RAD));
+  for (let k = 0; k < 6; k++) {
+    E = E - (E - (e / RAD) * Math.sin(E * RAD) - M) / (1 - e * Math.cos(E * RAD));
+  }
+  return E;
+}
+
+function sunPosition(d) {
+  const w = 282.9404 + 4.70935e-5 * d;
+  const e = 0.016709 - 1.151e-9 * d;
+  const M = norm360(356.047 + 0.9856002585 * d);
+  const E = solveKepler(M, e);
+  const xv = Math.cos(E * RAD) - e;
+  const yv = Math.sqrt(1 - e * e) * Math.sin(E * RAD);
+  const v = Math.atan2(yv, xv) / RAD;
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const lon = norm360(v + w);
+  return { lon, r, Ms: M };
+}
+
+function moonLongitude(d, sun) {
+  const N = 125.1228 - 0.0529538083 * d;
+  const i = 5.1454;
+  const w = 318.0634 + 0.1643573223 * d;
+  const a = 60.2666, e = 0.0549;
+  const M = norm360(115.3654 + 13.0649929509 * d);
+  const E = solveKepler(M, e);
+  const xv = a * (Math.cos(E * RAD) - e);
+  const yv = a * Math.sqrt(1 - e * e) * Math.sin(E * RAD);
+  const v = Math.atan2(yv, xv) / RAD;
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const vw = (v + w) * RAD, Nr = N * RAD, ir = i * RAD;
+  const xh = r * (Math.cos(Nr) * Math.cos(vw) - Math.sin(Nr) * Math.sin(vw) * Math.cos(ir));
+  const yh = r * (Math.sin(Nr) * Math.cos(vw) + Math.cos(Nr) * Math.sin(vw) * Math.cos(ir));
+  let lon = norm360(Math.atan2(yh, xh) / RAD);
+  // أهم التصحيحات
+  const Ls = norm360(sun.Ms + 282.9404 + 4.70935e-5 * d);
+  const Lm = norm360(N + w + M);
+  const D = norm360(Lm - Ls);
+  const F = norm360(Lm - N);
+  lon += -1.274 * Math.sin((M - 2 * D) * RAD)
+    + 0.658 * Math.sin(2 * D * RAD)
+    - 0.186 * Math.sin(sun.Ms * RAD)
+    - 0.059 * Math.sin((2 * M - 2 * D) * RAD)
+    - 0.057 * Math.sin((M - 2 * D + sun.Ms) * RAD)
+    + 0.053 * Math.sin((M + 2 * D) * RAD);
+  return norm360(lon);
+}
+
+const PLANET_ELEMENTS = {
+  mercury: { N: [48.3313, 3.24587e-5], i: [7.0047, 5e-8], w: [29.1241, 1.01444e-5], a: 0.387098, e: [0.205635, 5.59e-10], M: [168.6562, 4.0923344368] },
+  venus: { N: [76.6799, 2.4659e-5], i: [3.3946, 2.75e-8], w: [54.891, 1.38374e-5], a: 0.72333, e: [0.006773, -1.302e-9], M: [48.0052, 1.6021302244] },
+  mars: { N: [49.5574, 2.11081e-5], i: [1.8497, -1.78e-8], w: [286.5016, 2.92961e-5], a: 1.523688, e: [0.093405, 2.516e-9], M: [18.6021, 0.5240207766] },
+  jupiter: { N: [100.4542, 2.76854e-5], i: [1.303, -1.557e-7], w: [273.8777, 1.64505e-5], a: 5.20256, e: [0.048498, 4.469e-9], M: [19.895, 0.0830853001] },
+  saturn: { N: [113.6634, 2.3898e-5], i: [2.4886, -1.081e-7], w: [339.3939, 2.97661e-5], a: 9.55475, e: [0.052546, -9.499e-9], M: [316.967, 0.0334442282] },
+};
+
+function planetLongitude(key, d, sun) {
+  const el = PLANET_ELEMENTS[key];
+  const N = el.N[0] + el.N[1] * d;
+  const i = el.i[0] + el.i[1] * d;
+  const w = el.w[0] + el.w[1] * d;
+  const a = el.a;
+  const e = el.e[0] + el.e[1] * d;
+  const M = norm360(el.M[0] + el.M[1] * d);
+  const E = solveKepler(M, e);
+  const xv = a * (Math.cos(E * RAD) - e);
+  const yv = a * Math.sqrt(1 - e * e) * Math.sin(E * RAD);
+  const v = Math.atan2(yv, xv) / RAD;
+  const r = Math.sqrt(xv * xv + yv * yv);
+  const vw = (v + w) * RAD, Nr = N * RAD, ir = i * RAD;
+  const xh = r * (Math.cos(Nr) * Math.cos(vw) - Math.sin(Nr) * Math.sin(vw) * Math.cos(ir));
+  const yh = r * (Math.sin(Nr) * Math.cos(vw) + Math.cos(Nr) * Math.sin(vw) * Math.cos(ir));
+  // تحويل لمركزية الأرض
+  const xs = sun.r * Math.cos(sun.lon * RAD);
+  const ys = sun.r * Math.sin(sun.lon * RAD);
+  return norm360(Math.atan2(yh + ys, xh + xs) / RAD);
+}
+
+const ZODIAC_ORDER = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sag", "cap", "aqua", "pisces"];
+const signFromLongitude = (lon) => SIGNS.find((s) => s.id === ZODIAC_ORDER[Math.floor(norm360(lon) / 30)]);
+
+const PLANET_MEANINGS = [
+  { key: "sun", glyph: "☉", name: "الشمس", meaning: "جوهرك وهويتك" },
+  { key: "moon", glyph: "☾", name: "القمر", meaning: "مشاعرك واحتياجك العاطفي" },
+  { key: "mercury", glyph: "☿", name: "عطارد", meaning: "تفكيرك وأسلوب كلامك" },
+  { key: "venus", glyph: "♀", name: "الزهرة", meaning: "الحب والذوق والجمال عندك" },
+  { key: "mars", glyph: "♂", name: "المريخ", meaning: "طاقتك واندفاعك" },
+  { key: "jupiter", glyph: "♃", name: "المشتري", meaning: "حظك وتوسعك ونموك" },
+  { key: "saturn", glyph: "♄", name: "زحل", meaning: "دروسك ومسؤولياتك" },
+];
+
+// تحليل محلي احتياطي لو الاتصال بالـ AI مش متاح
+const LOCAL_ANALYSIS = {
+  sun: {
+    fire: "شمسك في برج ناري، وده معناه إن جوهرك حماسي وقيادي بطبيعته. عندك طاقة حياة قوية وبتحبي تبدئي وتتصدري المشهد، بس خدي بالك من الاندفاع — قوتك الحقيقية لما بتوجهي النار دي لهدف واضح.",
+    earth: "شمسك في برج ترابي، فجوهرك عملي وثابت. الناس بتعتمد عليكي لأنك بتخلصي اللي بتوعدي بيه، وبتبني نجاحك طوبة طوبة. الأمان المادي والاستقرار مهمين ليكي بشكل أساسي.",
+    air: "شمسك في برج هوائي، فجوهرك فكري واجتماعي. عقلك شغال طول الوقت، بتحبي الكلام وتبادل الأفكار، وبتشوفي الصورة من زوايا كتير. التواصل هو أكسجينك الحقيقي.",
+    water: "شمسك في برج مائي، فجوهرك عاطفي وحدسي عميق. بتحسي باللي حواليكي قبل ما يتكلموا، وقلبك هو بوصلتك. حساسيتك دي مش ضعف — دي رادار نادر لو اتعلمتي تحميه.",
+  },
+  moon: {
+    fire: "قمرك في برج ناري: مشاعرك بتولع بسرعة وبتبان — فرح ولا غضب، كله على وشك. بترتاحي لما بتتحركي وتعبري، والكتمان بيتعبك أكتر من أي حاجة.",
+    earth: "قمرك في برج ترابي: أمانك العاطفي بييجي من الاستقرار والروتين المريح. بتحتاجي تحسي إن الأرض ثابتة تحتيكي عشان مشاعرك تهدى، ولمساتك في الاهتمام عملية ملموسة.",
+    air: "قمرك في برج هوائي: بتفهمي مشاعرك بالكلام — لازم تحكي أو تكتبي عشان تستوعبي اللي جواكي. المناقشة الهادية بتريحك أكتر من الأحضان الصامتة أحيانًا.",
+    water: "قمرك في برج مائي: مشاعرك عميقة وبتحسي بمشاعر غيرك كأنها بتاعتك. محتاجة وقت لوحدك عشان تفرغي شحنات اليوم — ده مش انعزال، ده صيانة ضرورية لقلبك.",
+  },
+  mercury: {
+    fire: "عطارد في برج ناري: كلامك مباشر وسريع ومقنع، وبتفكري وإنتي بتتكلمي. عندك موهبة تحمّسي الناس بكلمة — استخدميها.",
+    earth: "عطارد في برج ترابي: تفكيرك منظم وعملي، بتاخدي وقتك قبل ما تحكمي، ولما بتتكلمي كلامك له وزن. الناس بتيجي تاخد رأيك لأنه مدروس.",
+    air: "عطارد في برج هوائي: عقلك أسرع من لسانك وده كتير! بتربطي أفكار من مجالات مختلفة ببعض بسهولة، ودي موهبة نادرة في حل المشاكل.",
+    water: "عطارد في برج مائي: بتفكري بقلبك وعقلك مع بعض، وبتلقطي اللي بين السطور. ذاكرتك العاطفية قوية — بتفتكري الإحساس مش بس الكلام.",
+  },
+  venus: {
+    fire: "الزهرة في برج ناري: في الحب بتنجذبي للشغف والمغامرة، وبتحبي بجرأة. الرومانسية الفاترة مش ليكي — إنتي عايزة حد يشعلل الدنيا معاكي.",
+    earth: "الزهرة في برج ترابي: الحب عندك أفعال مش كلام — الاهتمام الملموس والوفاء والحضور الثابت. ذوقك راقي وبتقدري الجمال الأصيل مش المظاهر.",
+    air: "الزهرة في برج هوائي: بتقعي في حب العقول الأول — الكلام الحلو والنقاش الممتع هو اللي بيخطفك. علاقاتك محتاجة صداقة حقيقية في قلبها.",
+    water: "الزهرة في برج مائي: بتحبي بعمق وبكل كيانك، وبتدوري على الذوبان والاتصال الروحي. قلبك كبير — بس افتكري تسيبي فيه مكان لنفسك.",
+  },
+  mars: {
+    fire: "المريخ في برج ناري: طاقتك بركان — لما بتقرري حاجة بتنفذيها فورًا. قوتك في المبادرة، بس تدريب الصبر هيخليكي تكسبي معارك أكبر.",
+    earth: "المريخ في برج ترابي: طاقتك زي الجرار — مش أسرع واحدة بس أقواهم نَفَسًا. بتوصلي لأهدافك بالمثابرة اللي بتكسر الصخر، والناس بتستغرب إزاي خلصتي كل ده.",
+    air: "المريخ في برج هوائي: بتحاربي بالكلمة والفكرة والحجة. طاقتك بتشتغل أحسن لما بتشتغلي على كذا حاجة، والملل هو عدوك الأول.",
+    water: "المريخ في برج مائي: طاقتك بتتحرك بالمشاعر — لما قلبك في حاجة مفيش حد يقدر يوقفك، ولما مش حاسة بيها بتتأجل. اربطي أهدافك بمعنى عاطفي وهتتفاجئي بنفسك.",
+  },
+  jupiter: {
+    fire: "المشتري في برج ناري: حظك بيفتح لما بتغامري وتاخدي خطوات جريئة. التوسع عندك بييجي من الثقة والمبادرة — الفرص بتحب الشجعان.",
+    earth: "المشتري في برج ترابي: حظك في البناء طويل المدى — الاستثمار الصبور والشغل المتقن. بركتك في اللي بتزرعيه بإيدك مش في الصدف.",
+    air: "المشتري في برج هوائي: حظك بييجي من الناس والمعارف والأفكار — كل ما وسعتي دايرة علاقاتك واتعلمتي جديد، أبواب بتتفتح لوحدها.",
+    water: "المشتري في برج مائي: حظك مربوط بحدسك — القرارات اللي بتاخديها لما قلبك مطمن بتطلع صح. ثقي في إحساسك الأول.",
+  },
+  saturn: {
+    fire: "زحل في برج ناري: درسك في الحياة هو الصبر وضبط الاندفاع. كل ما اتعلمتي توجهي حماسك في قنوات منظمة، هتحصدي إنجازات بتدوم.",
+    earth: "زحل في برج ترابي: درسك هو المرونة — إنتي قوية ومنضبطة بالفطرة، بس افتكري إن الكمال مش مطلوب، والراحة مش رفاهية.",
+    air: "زحل في برج هوائي: درسك هو تحويل الأفكار لواقع — عندك رؤى ذكية كتير، والتحدي إنك تلتزمي بفكرة واحدة لحد ما تكبر وتثمر.",
+    water: "زحل في برج مائي: درسك هو الحدود العاطفية — تتعلمي تقولي لأ من غير ذنب، وتفرقي بين التعاطف وشيل هموم الناس كلها على كتفك.",
+  },
+};
+
+function buildLocalAnalysis(positions) {
+  const sections = positions.map((p) => ({
+    title: `${p.name} في ${p.sign.name} ${p.sign.emoji}`,
+    body: (LOCAL_ANALYSIS[p.key] || {})[ELEMENT[p.sign.id]] || `${p.name} في ${p.sign.name} — ${p.meaning}.`,
+  }));
+  const counts = { fire: 0, earth: 0, air: 0, water: 0 };
+  positions.forEach((p) => counts[ELEMENT[p.sign.id]]++);
+  const domEl = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+  const domText = {
+    fire: "العنصر الناري هو الغالب في خريطتك — شخصية طاقتها عالية، بتقود وبتبادر، ومهمتها تتعلم توجيه النار دي بدل ما تحرقها.",
+    earth: "العنصر الترابي هو الغالب في خريطتك — شخصية عملية بتبني وتثبت، والناس بتحس معاها بالأمان، ومهمتها تفتكر تعيش اللحظة مش بس تخطط ليها.",
+    air: "العنصر الهوائي هو الغالب في خريطتك — شخصية فكرية اجتماعية بتشوف اللي غيرها مش شايفه، ومهمتها تنزل الأفكار من السما للأرض.",
+    water: "العنصر المائي هو الغالب في خريطتك — شخصية عميقة حدسها نادر وقلبها واسع، ومهمتها تحمي طاقتها وتحط حدود صحية.",
+  }[domEl];
+  sections.push({
+    title: "الصورة الكاملة 🌌",
+    body: `${domText}\n\nخريطتك مش أحكام نهائية — دي خريطة طريق بتوريكي نقاط قوتك ودروسك. (تحليل مبدئي — التحليل المفصل بالذكاء الاصطناعي متاح في التطبيق الكامل)`,
+  });
+  return sections;
+}
+
+function NatalChart() {
+  const [bdate, setBdate] = useState("");
+  const [btime, setBtime] = useState("12:00");
+  const [chart, setChart] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const getAnalysis = async (positions) => {
+    track('chart_analysis');
+    setAnalyzing(true);
+    setAnalysis(null);
+    const placements = positions.map((p) => `${p.name} في برج ${p.sign.name}`).join("، ");
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 3000,
+          system:
+            "إنتي خبيرة فلك بتكتبي تحليلات الخرائط الفلكية بالعامية المصرية الدافية. بتكتبي تحليل مفصل وشخصي، مش كلام عام ينفع لأي حد. أسلوبك ودود ومشوق زي حد بيحكي لصاحبته. اكتبي التحليل في أقسام: قسم لكل كوكب (عنوان القسم: اسم الكوكب في البرج، وتحته فقرة 3-5 جمل بتشرح معنى الموقع ده في الشخصية والحياة العملية والعاطفية)، وفي الآخر قسم 'الصورة الكاملة' بيربط كل المواقع ببعض في تحليل شامل للشخصية. افصلي بين الأقسام بسطر فيه ### قبل عنوان كل قسم. متستخدميش أي إيموجي في الرد.",
+          messages: [{
+            role: "user",
+            content: `دي مواقع الكواكب في خريطتي الفلكية: ${placements}. اكتبيلي التحليل الكامل.`,
+          }],
+        }),
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+      const text = data.content?.map((i) => (i.type === "text" ? i.text : "")).join("") || "";
+      if (text) {
+        const sections = text.split("###").map((s) => s.trim()).filter(Boolean).map((s) => {
+          const lines = s.split("\n").filter((l) => l.trim());
+          return { title: lines[0]?.replace(/[#*]/g, "").trim(), body: lines.slice(1).join("\n").replace(/[#*]/g, "").trim() };
+        });
+        setAnalysis(sections.length ? sections : [{ title: "تحليلك", body: text }]);
+      } else {
+        setAnalysis(buildLocalAnalysis(positions));
+      }
+    } catch (e) {
+      setAnalysis(buildLocalAnalysis(positions));
+    }
+    setAnalyzing(false);
+  };
+
+  const calc = () => {
+    if (!bdate) return;
+    const [h, min] = (btime || "12:00").split(":").map(Number);
+    const dt = new Date(bdate);
+    const utc = new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate(), h - 2, min)); // تقريب توقيت مصر
+    track('chart_draw');
+    const d = daysSinceJ2000(utc);
+    const sun = sunPosition(d);
+    const positions = [
+      { ...PLANET_MEANINGS[0], lon: sun.lon },
+      { ...PLANET_MEANINGS[1], lon: moonLongitude(d, sun) },
+      ...["mercury", "venus", "mars", "jupiter", "saturn"].map((k, i) => ({
+        ...PLANET_MEANINGS[i + 2], lon: planetLongitude(k, d, sun),
+      })),
+    ].map((p) => ({ ...p, sign: signFromLongitude(p.lon) }));
+    setChart(positions);
+    setAnalysis(null);
+  };
+
+  const size = 290, cx = size / 2, cy = size / 2, rOuter = 138, rSigns = 118, rPlanets = 86;
+
+  return (
+    <div style={{ padding: "22px 20px 90px", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        خريطتك الفلكية 🔮
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6, lineHeight: 1.8 }}>
+        مواقع الكواكب لحظة ميلادك — محسوبة بمعادلات فلكية حقيقية
+      </p>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <input type="date" value={bdate} onChange={(e) => setBdate(e.target.value)}
+          style={{
+            flex: 1.4, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`,
+            borderRadius: 12, padding: "11px 12px", color: C.text, fontSize: 13,
+            outline: "none", colorScheme: "dark", fontFamily: "'Tajawal', sans-serif",
+          }} />
+        <input type="time" value={btime} onChange={(e) => setBtime(e.target.value)}
+          style={{
+            flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`,
+            borderRadius: 12, padding: "11px 12px", color: C.text, fontSize: 13,
+            outline: "none", colorScheme: "dark", fontFamily: "'Tajawal', sans-serif",
+          }} />
+      </div>
+      <button onClick={calc} style={{
+        marginTop: 10, width: "100%", background: `linear-gradient(90deg, ${C.gold}, ${C.goldSoft})`,
+        border: "none", borderRadius: 24, padding: "12px", fontSize: 14, fontWeight: 700,
+        color: C.bg, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+      }}>ارسمي خريطتي ✨</button>
+
+      {chart && (
+        <div style={{ animation: "fadeUp .4s ease" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+              <circle cx={cx} cy={cy} r={rOuter} fill="rgba(46,34,85,.55)" stroke={C.gold} strokeOpacity="0.4" />
+              <circle cx={cx} cy={cy} r={rSigns - 20} fill="none" stroke={C.gold} strokeOpacity="0.25" />
+              {ZODIAC_ORDER.map((id, i) => {
+                const angle = (-(i * 30 + 15) + 180) * RAD;
+                const lineAngle = (-(i * 30) + 180) * RAD;
+                const s = SIGNS.find((x) => x.id === id);
+                return (
+                  <g key={id}>
+                    <line
+                      x1={cx + (rSigns - 20) * Math.cos(lineAngle)} y1={cy - (rSigns - 20) * Math.sin(lineAngle)}
+                      x2={cx + rOuter * Math.cos(lineAngle)} y2={cy - rOuter * Math.sin(lineAngle)}
+                      stroke={C.gold} strokeOpacity="0.25" />
+                    <text x={cx + rSigns * Math.cos(angle)} y={cy - rSigns * Math.sin(angle) + 5}
+                      textAnchor="middle" fontSize="15" fill={C.goldSoft}>{s.emoji}</text>
+                  </g>
+                );
+              })}
+              {chart.map((p, i) => {
+                const angle = (-p.lon + 180) * RAD;
+                return (
+                  <g key={i}>
+                    <circle cx={cx + rPlanets * Math.cos(angle)} cy={cy - rPlanets * Math.sin(angle)}
+                      r="12" fill={C.bg} stroke={C.rose} strokeOpacity="0.7" />
+                    <text x={cx + rPlanets * Math.cos(angle)} y={cy - rPlanets * Math.sin(angle) + 4.5}
+                      textAnchor="middle" fontSize="12" fill={C.goldSoft}>{p.glyph}</text>
+                  </g>
+                );
+              })}
+              <circle cx={cx} cy={cy} r="3" fill={C.gold} />
+            </svg>
+          </div>
+
+          {chart.map((p, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 12, marginTop: 10,
+              background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "11px 14px",
+            }}>
+              <span style={{ fontSize: 18, color: C.goldSoft, width: 22, textAlign: "center" }}>{p.glyph}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+                  {p.name} في {p.sign.name} {p.sign.emoji}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted }}>{p.meaning}</div>
+              </div>
+            </div>
+          ))}
+
+          <button onClick={() => getAnalysis(chart)} disabled={analyzing} style={{
+            marginTop: 14, width: "100%",
+            background: analyzing ? C.surface : "linear-gradient(90deg, #B98BE8, #E88BA3)",
+            border: "none", borderRadius: 24, padding: "13px", fontSize: 14.5, fontWeight: 700,
+            color: analyzing ? C.muted : C.bg, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+          }}>
+            {analyzing ? "بكتب تحليلك… خدي نَفَس ✨" : "🔮 اقري التحليل الكامل لخريطتي"}
+          </button>
+
+          {analysis && analysis.map((sec, i) => (
+            <div key={i} style={{
+              marginTop: 12, borderRadius: 18, padding: "16px", background: C.surface2,
+              border: `1px solid ${C.line}`, animation: "fadeUp .4s ease",
+            }}>
+              <div style={{
+                fontFamily: "'El Messiri', sans-serif", fontSize: 16, color: C.goldSoft, marginBottom: 8,
+              }}>{sec.title}</div>
+              <p style={{ fontSize: 13.5, lineHeight: 2.1, color: C.text, margin: 0, whiteSpace: "pre-wrap" }}>
+                {sec.body}
+              </p>
+            </div>
+          ))}
+
+          <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.8, marginTop: 12, textAlign: "center" }}>
+            حساب تقريبي (التوقيت مضبوط على مصر) — الطالع والبيوت محتاجين مكان الميلاد وهيتوفروا في النسخة الكاملة ✨
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ——— التاروت: الأركانا الكبرى ———
+const TAROT_CARDS = [
+  { name: "المهرج", symbol: "🌟", meaning: "بداية جديدة وروح مغامرة", advice: "النهارده يوم مثالي تبدئي فيه حاجة جديدة من غير ما تفكري كتير في النتيجة. ثقي في الرحلة." },
+  { name: "الساحر", symbol: "✨", meaning: "قدرتك على التحقيق والإبداع", advice: "كل الأدوات اللي محتاجاها موجودة معاكي فعلًا. اليوم ده لتحويل الفكرة لفعل." },
+  { name: "الكاهنة", symbol: "🌙", meaning: "الحدس والحكمة الداخلية", advice: "جواب سؤالك اللي محيرك جواكي أصلًا. اهدي، واسمعي صوتك الداخلي النهارده." },
+  { name: "الإمبراطورة", symbol: "🌸", meaning: "الوفرة والرعاية", advice: "اهتمي بنفسك زي ما بتهتمي بالكل. الدلع النهارده مش رفاهية، ده شحن." },
+  { name: "الإمبراطور", symbol: "👑", meaning: "النظام والقيادة والثبات", advice: "حطي حدود واضحة النهارده — في الشغل أو البيت. الحزم الهادي هو مفتاحك." },
+  { name: "المعلم", symbol: "📜", meaning: "الحكمة والتعلم", advice: "اسألي حد عنده خبرة قبل ما تقرري. النصيحة الصح النهارده بتوفر عليكي شهور." },
+  { name: "العشاق", symbol: "💞", meaning: "الاختيار والانسجام والحب", advice: "قرار قلبك النهارده أهم من قرار عقلك. اختاري اللي بيخليكي أنتِ الحقيقية." },
+  { name: "العربة", symbol: "🏆", meaning: "الإرادة والانتصار والتقدم", advice: "امسكي الدفة بإيدك النهارده. التردد هو العدو الوحيد بينك وبين اللي عايزاه." },
+  { name: "القوة", symbol: "🦁", meaning: "الشجاعة الهادية والصبر", advice: "قوتك الحقيقية في هدوئك. اللي بيستفزك النهارده، ردك الهادي عليه هو انتصارك." },
+  { name: "الناسك", symbol: "🏮", meaning: "التأمل والبحث الداخلي", advice: "خدي وقت لوحدك النهارده ولو ساعة. الإجابات بتيجي في الهدوء مش في الزحمة." },
+  { name: "عجلة الحظ", symbol: "🎡", meaning: "التغيير ودورات الحياة", advice: "اللي واقف هيتحرك قريب. استعدي للفرصة بدل ما تستنيها." },
+  { name: "العدالة", symbol: "⚖️", meaning: "التوازن والحق والإنصاف", advice: "اليوم مناسب تصلحي فيه موقف مش عادل — حتى لو مع نفسك. الميزان بيبدأ من جواكي." },
+  { name: "المعلق", symbol: "🔄", meaning: "تغيير المنظور والتسليم", advice: "لو المشكلة مش بتتحل، غيري زاوية النظر مش المجهود. شوفيها من فوق." },
+  { name: "التحول", symbol: "🦋", meaning: "نهاية فصل وبداية آخر", advice: "سيبي اللي خلص يخلص بسلام. اللي جاي محتاج المساحة اللي القديم واخدها." },
+  { name: "الاعتدال", symbol: "🕊️", meaning: "التوازن والصبر والمزج", advice: "متتطرفيش في حاجة النهارده — لا شغل زيادة ولا كسل. الوسط هو السحر." },
+  { name: "الظل", symbol: "⛓️", meaning: "القيود والأنماط المتكررة", advice: "لاحظي عادة بتقيدك النهارده — أول خطوة للفكاك إنك تشوفيها بوضوح." },
+  { name: "البرج", symbol: "⚡", meaning: "التغيير المفاجئ والصحوة", advice: "لو حاجة اتهزت فجأة، مش نهاية — ده تصحيح مسار. اللي بيقع كان أساسه ضعيف." },
+  { name: "النجمة", symbol: "⭐", meaning: "الأمل والشفاء والإلهام", advice: "بعد التعب بييجي الصفا. النهارده يوم شفاء — اسمحي للأمل يرجع." },
+  { name: "القمر", symbol: "🌕", meaning: "الحدس والأحلام والغموض", advice: "مش كل حاجة باينة على حقيقتها النهارده. خدي وقتك قبل الحكم، وثقي في إحساسك." },
+  { name: "الشمس", symbol: "☀️", meaning: "الفرح والنجاح والوضوح", advice: "يومك منور! شاركي طاقتك الحلوة — الفرح بيتضاعف لما بيتقسم." },
+  { name: "النداء", symbol: "🎺", meaning: "الصحوة والنهوض", advice: "نداء جواكي بقاله فترة بيتكلم — مشروع، تغيير، مصالحة. النهارده ردي عليه." },
+  { name: "العالم", symbol: "🌍", meaning: "الاكتمال والإنجاز", advice: "دورة كاملة بتقفل بنجاح. احتفلي باللي وصلتيله قبل ما تجري على الجاي." },
+];
+
+function Tarot() {
+  const [card, setCard] = useState(null);
+  const [flipped, setFlipped] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+
+  const draw = () => {
+    if (drawing) return;
+    track('tarot_draw');
+    setDrawing(true);
+    setFlipped(false);
+    const pick = TAROT_CARDS[Math.floor(Math.random() * TAROT_CARDS.length)];
+    setTimeout(() => {
+      setCard(pick);
+      setFlipped(true);
+      setDrawing(false);
+    }, 600);
+  };
+
+  return (
+    <div style={{ padding: "22px 20px 90px", textAlign: "center", position: "relative", zIndex: 1 }}>
+      <h2 style={{ fontFamily: "'El Messiri', sans-serif", fontSize: 20, color: C.goldSoft, margin: 0 }}>
+        كارت اليوم 🃏
+      </h2>
+      <p style={{ color: C.muted, fontSize: 13, marginTop: 6, lineHeight: 1.8 }}>
+        ركزي في سؤالك أو نيتك… وبعدين دوسي على الكارت
+      </p>
+
+      <div style={{ perspective: 1000, display: "flex", justifyContent: "center", marginTop: 18 }}>
+        <div onClick={draw} style={{
+          width: 170, height: 265, position: "relative", cursor: "pointer",
+          transformStyle: "preserve-3d", transition: "transform .7s cubic-bezier(.4,.2,.2,1)",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}>
+          {/* ضهر الكارت */}
+          <div style={{
+            position: "absolute", inset: 0, backfaceVisibility: "hidden",
+            borderRadius: 16, border: `2px solid ${C.gold}`,
+            background: `radial-gradient(circle at 50% 35%, ${C.surface2}, ${C.bg})`,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 10px 40px rgba(0,0,0,.5)",
+          }}>
+            <div style={{ fontSize: 40 }}>🌙</div>
+            <div style={{
+              fontFamily: "'El Messiri', sans-serif", fontSize: 13, color: C.gold,
+              marginTop: 10, letterSpacing: 1,
+            }}>طاقتك النهارده</div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 16 }}>
+              {drawing ? "بسحبلك كارت…" : "دوسي عشان تسحبي"}
+            </div>
+          </div>
+          {/* وش الكارت */}
+          <div style={{
+            position: "absolute", inset: 0, backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)", borderRadius: 16,
+            border: "2px solid " + C.goldSoft,
+            background: `linear-gradient(160deg, ${C.surface2}, ${C.surface})`,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            padding: 16, boxShadow: `0 0 45px rgba(232,184,75,.3)`,
+          }}>
+            {card && (
+              <>
+                <div style={{ fontSize: 52 }}>{card.symbol}</div>
+                <div style={{
+                  fontFamily: "'El Messiri', sans-serif", fontSize: 19, color: C.goldSoft, marginTop: 10,
+                }}>{card.name}</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.7 }}>
+                  {card.meaning}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {card && flipped && (
+        <div style={{
+          marginTop: 18, borderRadius: 18, padding: 16, textAlign: "right",
+          background: C.surface2, border: `1px solid ${C.line}`, animation: "fadeUp .5s ease",
+        }}>
+          <div style={{ fontSize: 13, color: C.gold, fontWeight: 700, marginBottom: 6 }}>
+            رسالة الكارت ليكي ✨
+          </div>
+          <p style={{ fontSize: 14, lineHeight: 2, color: C.text, margin: 0 }}>{card.advice}</p>
+          <button onClick={draw} style={{
+            marginTop: 12, background: "transparent", border: `1.5px solid ${C.gold}`,
+            borderRadius: 20, padding: "9px 22px", fontSize: 13, fontWeight: 700,
+            color: C.gold, cursor: "pointer", fontFamily: "'Tajawal', sans-serif",
+          }}>اسحبي كارت تاني</button>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 16, borderRadius: 18, padding: "14px 16px",
+        background: "rgba(185,139,232,.08)", border: "1px solid rgba(185,139,232,.3)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: "#C9A8EE" }}>قراءة الـ 3 كروت 🔒</div>
+          <div style={{ fontSize: 11.5, color: C.muted }}>ماضي · حاضر · مستقبل بتفسير مخصوص</div>
+        </div>
+        <span style={{
+          fontSize: 11, color: C.bg, background: "linear-gradient(90deg,#B98BE8,#E88BA3)",
+          padding: "6px 12px", borderRadius: 16, fontWeight: 700,
+        }}>Premium</span>
+      </div>
+    </div>
+  );
+}
+
+const TABS = [
+  { id: "today", label: "النهارده", emoji: "☀️" },
+  { id: "tarot", label: "تاروت", emoji: "🃏" },
+  { id: "chart", label: "خريطتك", emoji: "🔮" },
+  { id: "family", label: "عيلتك", emoji: "👨‍👩‍👧" },
+  { id: "chat", label: "مساحتك", emoji: "💬" },
+  { id: "mood", label: "مودك", emoji: "💛" },
+  { id: "bubble", label: "فقاعتك", emoji: "🫧" },
+  { id: "evening", label: "المسا", emoji: "🌙" },
+];
+
+function App() {
+  const [sign, setSign] = useState(null);
+  const [tab, setTab] = useState("today");
+  return (
+    <div style={{
+      minHeight: "100dvh", background: "#0E0A1E", display: "flex",
+      alignItems: "flex-start", justifyContent: "center",
+      fontFamily: "'Tajawal', sans-serif",
+    }} dir="rtl">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;700&family=Tajawal:wght@400;700&display=swap');
+        @keyframes twinkle { 0%,100%{opacity:.15} 50%{opacity:.7} }
+        @keyframes breathe { 0%,100%{transform:scale(.75)} 30%{transform:scale(1.15)} 60%{transform:scale(1.15)} }
+        @keyframes fadeUp { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+        textarea::placeholder { color: #7d729e; }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+      `}</style>
+      <div style={{
+        width: 430, maxWidth: "100%", height: "100dvh", background: C.bg,
+        overflow: "hidden", position: "relative",
+        display: "flex", flexDirection: "column",
+      }}>
+        <Stars />
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {!sign ? <Onboarding onPick={setSign} /> : (
+            <>
+              {tab === "today" && <Today sign={sign} />}
+              {tab === "tarot" && <Tarot />}
+              {tab === "chart" && <NatalChart />}
+              {tab === "family" && <Family />}
+              {tab === "mood" && <Mood />}
+              {tab === "chat" && <Chat />}
+              {tab === "bubble" && <Bubble />}
+              {tab === "evening" && <Evening />}
+            </>
+          )}
+        </div>
+        {sign && (
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            background: "rgba(20,13,40,.92)", backdropFilter: "blur(10px)",
+            borderTop: `1px solid ${C.line}`, display: "flex",
+            padding: "10px 8px 16px", zIndex: 2,
+          }}>
+            {TABS.map((t) => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                flex: 1, background: "none", border: "none", cursor: "pointer", padding: "0 1px",
+                color: tab === t.id ? C.gold : C.muted, fontFamily: "'Tajawal', sans-serif",
+              }}>
+                <div style={{ fontSize: 17 }}>{t.emoji}</div>
+                <div style={{ fontSize: 9.5, fontWeight: tab === t.id ? 700 : 400, marginTop: 2, whiteSpace: "nowrap" }}>{t.label}</div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
